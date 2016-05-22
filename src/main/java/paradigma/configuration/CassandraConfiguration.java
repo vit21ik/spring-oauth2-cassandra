@@ -1,11 +1,13 @@
 package paradigma.configuration;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
 import org.springframework.data.cassandra.config.CassandraClusterFactoryBean;
 import org.springframework.data.cassandra.config.CassandraSessionFactoryBean;
 import org.springframework.data.cassandra.config.SchemaAction;
-import org.springframework.data.cassandra.config.java.AbstractCassandraConfiguration;
 import org.springframework.data.cassandra.convert.CassandraConverter;
 import org.springframework.data.cassandra.convert.MappingCassandraConverter;
 import org.springframework.data.cassandra.core.CassandraOperations;
@@ -17,26 +19,18 @@ import org.springframework.data.cassandra.mapping.CassandraMappingContext;
  * Created on 5/19/16.
  */
 @Configuration
-public class CassandraConfiguration extends AbstractCassandraConfiguration {
+@PropertySource(value = { "classpath:cassandra.properties" })
+public class CassandraConfiguration {
+
+    @Autowired
+    private Environment env;
 
     @Bean
-    @Override
     public CassandraClusterFactoryBean cluster() {
         CassandraClusterFactoryBean cluster = new CassandraClusterFactoryBean();
-        cluster.setContactPoints("localhost");
-        cluster.setPort(9042);
+        cluster.setContactPoints(env.getProperty("cassandra.contactpoints"));
+        cluster.setPort(Integer.parseInt(env.getProperty("cassandra.port")));
         return cluster;
-    }
-
-    @Override
-    protected String getKeyspaceName() {
-        return "demo_oauth";
-    }
-
-    @Bean
-    @Override
-    public CassandraMappingContext cassandraMapping() throws  ClassNotFoundException {
-        return new BasicCassandraMappingContext();
     }
 
     @Bean
@@ -53,7 +47,7 @@ public class CassandraConfiguration extends AbstractCassandraConfiguration {
     public CassandraSessionFactoryBean session() throws Exception {
         CassandraSessionFactoryBean session = new CassandraSessionFactoryBean();
         session.setCluster(cluster().getObject());
-        session.setKeyspaceName(getKeyspaceName());
+        session.setKeyspaceName(env.getProperty("cassandra.keyspace"));
         session.setConverter(converter());
         session.setSchemaAction(SchemaAction.NONE);
         return session;
